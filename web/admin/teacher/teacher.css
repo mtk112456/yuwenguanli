@@ -887,3 +887,11 @@ body.ta-task-mode .ta-main { padding-bottom: 0; }
     .ta-d-actions.three .ta-btn-danger i,
     .ta-d-actions.three .ta-btn-danger2 i { display: none; }
 }
+
+/* 拍照任务底栏：层级布局（上传整行 + 存档并排），大字体/窄屏安全 */
+.ta-d-actions.stack { flex-direction: column; gap: 8px; }
+.ta-d-actions.stack .ta-btn-danger.wide { width: 100%; }
+.ta-d-row { display: flex; gap: 9px; }
+.ta-d-row .ta-btn-danger2, .ta-d-row .ta-btn-primary { flex: 1; }
+
+.ta-d-row .ta-btn-danger2, .ta-d-row .ta-btn-primary { white-space: nowrap; }
