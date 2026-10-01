@@ -1,0 +1,32 @@
+{
+	"appId": "tech.qneng.teacher",
+	"appName": "班级成长助教",
+	"webDir": "www",
+	"server": {
+		"url": "https://qi.qnengs.tech/admin/teacher/index.php",
+		"cleartext": false,
+		"allowNavigation": [
+			"qi.qnengs.tech"
+		]
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 1200,
+			"backgroundColor": "#1e3a5f",
+			"showSpinner": false
+		},
+		"SystemBars": {
+			"insetsHandling": "css",
+			"initialViewportFitValueHint": "cover",
+			"style": "DARK",
+			"hidden": false
+		},
+		"StatusBar": {
+			"style": "DARK",
+			"backgroundColor": "#1e3a5f"
+		}
+	},
+	"android": {
+		"allowMixedContent": false
+	}
+}
