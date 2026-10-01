@@ -3,8 +3,6 @@ android/.gradle/
 android/app/build/
 android/build/
 android/local.properties
-android/capacitor-cordova-android-plugins/
-android/app/src/main/assets/public/
 tmp/
 output/
 *.apk
