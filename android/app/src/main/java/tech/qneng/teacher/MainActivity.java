@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
-import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -14,7 +13,6 @@ import android.provider.Settings;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
-import android.webkit.SslErrorHandler;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -194,13 +192,6 @@ public class MainActivity extends BridgeActivity {
         "      }, 280);" +
         "    }" +
         "  });" +
-        "  window.addEventListener('online', function() {" +
-        "    var toast = document.createElement('div');" +
-        "    toast.style.cssText = 'position:fixed;bottom:calc(76px + env(safe-area-inset-bottom, 0px));left:50%;transform:translateX(-50%);background:#059669;color:#fff;padding:9px 20px;border-radius:24px;font-size:13.5px;font-weight:600;z-index:999999;box-shadow:0 6px 16px rgba(0,0,0,0.2);';" +
-        "    toast.innerText = '网络已恢复，正在更新数据…';" +
-        "    document.body.appendChild(toast);" +
-        "    setTimeout(function() { window.location.reload(); }, 1000);" +
-        "  });" +
         "})();";
     }
 
@@ -311,21 +302,8 @@ public class MainActivity extends BridgeActivity {
                     }
                     super.onReceivedError(view, errorCode, description, failingUrl);
                 }
-
-                @Override
-                public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-                    String host = null;
-                    if (error != null && error.getUrl() != null) {
-                        try {
-                            host = Uri.parse(error.getUrl()).getHost();
-                        } catch (Exception ignored) {}
-                    }
-                    if (host != null && (host.equalsIgnoreCase(SERVER_HOST) || host.endsWith("." + SERVER_HOST))) {
-                        handler.proceed();
-                        return;
-                    }
-                    super.onReceivedSslError(view, handler, error);
-                }
+                // 证书错误一律交由系统默认处理（取消连接并走错误/重试页），
+                // 不做任何放行：教学系统使用受信 CA 证书，放行等于向中间人暴露管理员凭据
             });
 
             String appVersionName = getAppVersionName();
@@ -357,6 +335,21 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public long getVersionCode() {
             return MainActivity.this.getAppVersionCode();
+        }
+
+        @JavascriptInterface
+        public void setNavigationBarColor(String color) {
+            try {
+                final int parsed = Color.parseColor(color);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            getWindow().setNavigationBarColor(parsed);
+                        }
+                    }
+                });
+            } catch (Exception ignored) {}
         }
 
         @JavascriptInterface
