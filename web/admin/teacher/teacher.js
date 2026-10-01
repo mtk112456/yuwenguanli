@@ -256,15 +256,17 @@
     // ===================== Tab 管理 =====================
     var activeTab = 'home';
     var subOpen = false;
-
-    function setBodyFrameMode(on) {
-        body.classList.toggle('ta-frame-mode', !!on);
-    }
+    var lastTab = 'home';
+    var tabScroll = {};
 
     function switchTab(name) {
         if (!name) return;
+        var prevSec = document.querySelector('.ta-tab.active');
+        if (prevSec) tabScroll[prevSec.id] = window.scrollY;
         if (subOpen) closeSub(false);
+        body.classList.remove('ta-task-mode');
         activeTab = name;
+        lastTab = name;
 
         $all('.ta-tab').forEach(function (sec) { sec.classList.remove('active'); });
         var sec = $('#taTab-' + name);
@@ -274,10 +276,10 @@
             item.classList.toggle('active', item.dataset.tab === name);
         });
 
-        var isFrameTab = (name === 'essay' || name === 'score');
-        setBodyFrameMode(isFrameTab);
-        if (isFrameTab) ensureFrame(name);
-        window.scrollTo(0, 0);
+        window.scrollTo(0, tabScroll['taTab-' + name] || 0);
+        // 首次进入真实页签时拉取数据
+        if (name === 'essay' && window.TE && TE.essay && !TE.essay.booted()) TE.essay.onShow();
+        if (name === 'score' && window.TE && TE.score && !TE.score.booted()) TE.score.onShow();
     }
 
     // ===================== 二级功能页 =====================
@@ -295,7 +297,8 @@
         $all('.ta-tabbar .ta-tab-item').forEach(function (item) {
             item.classList.toggle('active', item.dataset.tab === 'all');
         });
-        setBodyFrameMode(true);
+        // 任务模式：隐藏底栏与头部，仅保留返回栏
+        body.classList.add('ta-task-mode');
         subOpen = true;
         subStack++;
         window.scrollTo(0, 0);
@@ -372,6 +375,24 @@
 
             renderTodos(d);
             renderAllBadges(d);
+
+            // 待批改作文数（独立接口，失败不影响主数据）；优先展示可点击事项
+            request('../../api/admin/essay/grader.php?action=pending_list').then(function (r2) {
+                if (r2.code === 0 && r2.data && r2.data.list) {
+                    TE.essayPendingCount = r2.data.list.length;
+                    var d2 = Object.assign({}, d, { pending_essays: TE.essayPendingCount });
+                    renderTodos(d2);
+                    var badge = document.querySelector('.ta-all-badge[data-badge="essay"]');
+                    if (badge) {
+                        if (TE.essayPendingCount > 0) {
+                            badge.textContent = TE.essayPendingCount > 99 ? '99+' : String(TE.essayPendingCount);
+                            badge.classList.add('show');
+                        } else {
+                            badge.classList.remove('show');
+                        }
+                    }
+                }
+            }).catch(function () {});
         } catch (e) {
             var list = $('#taTodoList');
             if (list) {
@@ -384,6 +405,9 @@
         var list = $('#taTodoList');
         if (!list) return;
         var items = [];
+        if ((d.pending_essays || 0) > 0) {
+            items.push({ text: '作文待批改', count: d.pending_essays, unit: '篇', tab: 'essay' });
+        }
         if ((d.pending_shop_orders || 0) > 0) {
             items.push({
                 text: '商城兑换待核销',
@@ -407,7 +431,10 @@
             return;
         }
         list.innerHTML = items.map(function (it) {
-            return '<button type="button" class="ta-todo-item" data-sub="' + it.url + '" data-title="' + escapeHtml(it.title) + '" style="width:100%;text-align:left;">' +
+            var attr = it.tab
+                ? 'data-tab="' + it.tab + '"'
+                : 'data-sub="' + it.url + '" data-title="' + escapeHtml(it.title) + '"';
+            return '<button type="button" class="ta-todo-item" ' + attr + ' style="width:100%;text-align:left;">' +
                 '<span class="ta-todo-dot"></span>' +
                 '<span class="ta-todo-text">' + escapeHtml(it.text) + '</span>' +
                 '<span class="ta-todo-count">' + it.count + ' ' + it.unit + '</span>' +
@@ -420,7 +447,7 @@
     var ALL_GROUPS = [
         {
             name: '教学与评价', icon: 'ri-book-read-line', items: [
-                { name: '作文批改', icon: 'ri-edit-2-line', tab: 'essay' },
+                { name: '作文批改', icon: 'ri-edit-2-line', tab: 'essay', badge: 'essay' },
                 { name: '量化考核', icon: 'ri-edit-circle-line', tab: 'score' },
                 { name: '数据概览', icon: 'ri-dashboard-3-line', sub: '../index.php', title: '数据概览' },
                 { name: '学情档案', icon: 'ri-brain-line', sub: '../coach.php', title: '学情分析与档案' },
@@ -447,6 +474,7 @@
                 { name: '操作台账', icon: 'ri-file-list-3-line', sub: '../records.php', title: '操作台账' },
                 { name: '登录记录', icon: 'ri-history-line', sub: '../logins.php', title: '登录记录' },
                 { name: '系统设置', icon: 'ri-settings-3-line', sub: '../system.php', title: '系统设置' },
+                { name: '教师设置', icon: 'ri-user-settings-line', task: 'settings', title: '设置' },
                 { name: '主题切换', icon: 'ri-palette-line', action: 'theme' },
                 { name: '检查更新', icon: 'ri-download-cloud-2-line', action: 'update' },
                 { name: '退出登录', icon: 'ri-logout-box-r-line', action: 'logout', danger: true }
@@ -455,7 +483,7 @@
         {
             name: '手机工具', icon: 'ri-smartphone-line', items: [
                 { name: '授权白板', icon: 'ri-qr-code-line', sub: '../magic.php', title: '授权白板登录' },
-                { name: '拍照批改', icon: 'ri-camera-line', sub: '../essay.php?action=camera', title: '拍照批改' }
+                { name: '拍照批改', icon: 'ri-camera-line', task: 'camera', title: '拍照批改' }
             ]
         }
     ];
@@ -467,7 +495,9 @@
             var items = group.items.map(function (it) {
                 var attrs = it.tab
                     ? 'data-tab="' + it.tab + '"'
-                    : (it.sub ? 'data-sub="' + it.sub + '" data-title="' + escapeHtml(it.title || it.name) + '"' : 'data-action="' + it.action + '"');
+                    : (it.task
+                        ? 'data-task="' + it.task + '" data-title="' + escapeHtml(it.title || it.name) + '"'
+                        : (it.sub ? 'data-sub="' + it.sub + '" data-title="' + escapeHtml(it.title || it.name) + '"' : 'data-action="' + it.action + '"'));
                 return '<button type="button" class="ta-all-item' + (it.danger ? ' danger' : '') + '" ' + attrs + '>' +
                     '<span class="ta-all-badge" data-badge="' + (it.badge || '') + '">0</span>' +
                     '<span class="ta-all-icon"><i class="' + it.icon + '"></i></span>' +
@@ -480,7 +510,11 @@
     }
 
     function renderAllBadges(d) {
-        var counts = { shop: d.pending_shop_orders || 0, feedback: d.pending_feedback || 0 };
+        var counts = {
+            shop: d.pending_shop_orders || 0,
+            feedback: d.pending_feedback || 0,
+            essay: (window.TE && TE.essayPendingCount) || 0
+        };
         $all('.ta-all-badge').forEach(function (badge) {
             var key = badge.dataset.badge;
             if (!key || !(key in counts)) return;
@@ -632,11 +666,15 @@
     // ===================== 全局点击分发（事件委托） =====================
     function bindGlobalClick() {
         document.addEventListener('click', function (e) {
-            var el = e.target.closest('[data-tab],[data-sub],[data-action]');
+            var el = e.target.closest('[data-tab],[data-sub],[data-task],[data-action]');
             if (!el) return;
 
             if (el.dataset.tab) {
                 switchTab(el.dataset.tab);
+                return;
+            }
+            if (el.dataset.task) {
+                openTask(el.dataset.task, {}, el.dataset.title || '');
                 return;
             }
             if (el.dataset.sub) {
@@ -653,6 +691,9 @@
                     break;
                 case 'logout':
                     doLogout();
+                    break;
+                case 'task':
+                    openTask(el.dataset.task, {}, el.dataset.title || '任务');
                     break;
             }
         });
@@ -689,6 +730,17 @@
             if (!item) return;
             applyTheme(item.dataset.themeId, item);
             setTimeout(closeSheet, prefersReducedMotion ? 0 : 320);
+        });
+        // 通用选择面板（学生/班级/模型/命题等）
+        var genMask = $('#taGenMask'), genClose = $('#taGenClose');
+        if (genMask) genMask.addEventListener('click', taCloseGenSheet);
+        if (genClose) genClose.addEventListener('click', taCloseGenSheet);
+        // 通用确认弹窗：点遮罩视为取消
+        var dlgMask = $('#taDialogMask');
+        if (dlgMask) dlgMask.addEventListener('click', function (e) {
+            if (e.target === dlgMask && !dlgMask.hidden) {
+                $('#taDialogCancel').click();
+            }
         });
     }
 
@@ -753,15 +805,19 @@
                 active.blur();
                 return;
             }
-            // 2. 关主题抽屉
+            // 2. 关主题抽屉 / 通用面板 / 确认弹窗
             if (isSheetOpen()) { closeSheet(); return; }
-            // 3. 关闭 iframe 内弹窗/抽屉
-            var activeFrame = subOpen ? $('#taFrame-sub') : ((activeTab === 'essay' || activeTab === 'score') ? $('#taFrame-' + activeTab) : null);
-            if (activeFrame && tryCloseFrameOverlay(activeFrame)) return;
-            // 4. 二级页 → 返回全部；iframe 有历史 → 后退
-            if (subOpen) { closeSub(); return; }
-            if (activeFrame && frameCanGoBack(activeFrame)) {
-                try { activeFrame.contentWindow.history.back(); } catch (e) {}
+            var genSheet = $('#taGenSheet');
+            if (genSheet && genSheet.classList.contains('show')) { taCloseGenSheet(); return; }
+            var dlgMask = $('#taDialogMask');
+            if (dlgMask && !dlgMask.hidden) { $('#taDialogCancel').click(); return; }
+            // 3. 任务模式（详情/拍照/设置）：任务自定义返回 → 关闭任务
+            if (inTaskMode()) { requestCloseTask(); return; }
+            // 4. 二级 iframe 页：先关内部弹窗，再返回全部
+            if (subOpen) {
+                var subFrame = $('#taFrame-sub');
+                if (tryCloseFrameOverlay(subFrame)) return;
+                closeSub();
                 return;
             }
             // 5. 业务 Tab → 回工作台
@@ -777,6 +833,166 @@
         });
     }
 
+    // ===================== 任务模式（详情/拍照/设置：隐藏底栏+头部，统一返回栏） =====================
+    window.TE = window.TE || {};
+    TE.tasks = TE.tasks || {};
+    var taskStack = [];
+
+    function inTaskMode() { return body.classList.contains('ta-task-mode'); }
+
+    function openTask(kind, params, title) {
+        var fn = TE.tasks[kind];
+        if (typeof fn !== 'function') { toast('功能加载中，请稍候'); return; }
+        var entry = { kind: kind, params: params || {}, title: title || '' };
+        taskStack.push(entry);
+        body.classList.add('ta-task-mode');
+        $('#taTaskTitle').textContent = entry.title;
+        $('#taTaskHeadRight').innerHTML = '';
+        $all('.ta-tab').forEach(function (s) { s.classList.remove('active'); });
+        $('#taTab-task').classList.add('active');
+        window.scrollTo(0, 0);
+        fn($('#taTaskBody'), entry.params, entry);
+    }
+
+    function closeTask() {
+        var entry = taskStack.pop();
+        if (entry && typeof entry.onClose === 'function') {
+            try { entry.onClose(); } catch (e) {}
+        }
+        if (taskStack.length) {
+            var prev = taskStack[taskStack.length - 1];
+            $('#taTaskTitle').textContent = prev.title;
+            $('#taTaskHeadRight').innerHTML = '';
+            var fn = TE.tasks[prev.kind];
+            if (typeof fn === 'function') fn($('#taTaskBody'), prev.params, prev);
+            window.scrollTo(0, 0);
+        } else {
+            body.classList.remove('ta-task-mode');
+            $('#taTab-task').classList.remove('active');
+            switchTab(lastTab || 'home');
+        }
+    }
+
+    async function requestCloseTask() {
+        var entry = taskStack[taskStack.length - 1];
+        if (entry && typeof entry.onBack === 'function') {
+            var v = false;
+            try { v = await entry.onBack(); } catch (e) { v = false; }
+            if (v === false) return;
+        }
+        closeTask();
+    }
+
+    // ===================== 通用确认弹窗与选择面板 =====================
+    function taConfirm(msg) {
+        return new Promise(function (resolve) {
+            var mask = $('#taDialogMask');
+            if (!mask) { resolve(window.confirm(msg)); return; }
+            $('#taDialogMsg').textContent = msg || '确认执行该操作吗？';
+            mask.hidden = false;
+            var ok = $('#taDialogOk'), cancel = $('#taDialogCancel');
+            var done = function (v) {
+                mask.hidden = true;
+                ok.onclick = null; cancel.onclick = null;
+                resolve(v);
+            };
+            ok.onclick = function () { done(true); };
+            cancel.onclick = function () { done(false); };
+        });
+    }
+
+    function taOpenSheet(title, content, onReady) {
+        var mask = $('#taGenMask'), sheet = $('#taGenSheet'), bodyEl = $('#taGenBody');
+        if (!mask || !sheet || !bodyEl) return;
+        $('#taGenTitle').textContent = title || '选择';
+        bodyEl.innerHTML = '';
+        if (typeof content === 'string') bodyEl.innerHTML = content;
+        else if (content) bodyEl.appendChild(content);
+        mask.classList.add('show');
+        sheet.classList.add('show');
+        if (typeof onReady === 'function') onReady(bodyEl);
+    }
+
+    function taCloseGenSheet() {
+        var mask = $('#taGenMask'), sheet = $('#taGenSheet');
+        if (mask) mask.classList.remove('show');
+        if (sheet) sheet.classList.remove('show');
+    }
+
+    // ===================== 共享 API（teacher-essay / teacher-score 模块） =====================
+    window.TA = {
+        request: request,
+        toForm: toForm,
+        escapeHtml: escapeHtml,
+        toast: toast,
+        confirm: taConfirm,
+        openSheet: taOpenSheet,
+        closeSheet: taCloseGenSheet,
+        switchTab: function (t) { switchTab(t); },
+        openTask: openTask,
+        closeTask: closeTask,
+        refreshDashboard: function () { loadDashboard(); },
+        img: function (u) {
+            u = String(u || '');
+            if (!u) return '';
+            return /^https?:/i.test(u) ? u : (u.charAt(0) === '/' ? u : '/' + u);
+        },
+        fmtTime: function (t) {
+            if (!t) return '';
+            return String(t).replace('T', ' ').substring(5, 16);
+        }
+    };
+
+    // ===================== 设置任务页（分组展示） =====================
+    TE.tasks.settings = function (bodyEl) {
+        var themes = (window.ThemeManager && ThemeManager.getThemes()) || [];
+        var current = window.ThemeManager ? ThemeManager.getCurrentTheme() : 'ink_blue';
+        var sw = { ink_blue: '墨', bamboo_green: '竹', imperial_purple: '紫', warm_paper: '笺', misty_cyan: '青' };
+        var name = '';
+        try { name = localStorage.getItem('admin_name') || '老师'; } catch (e) { name = '老师'; }
+        var ver = (window.APP_VERSION_NAME || '?') + ' (' + (window.APP_VERSION_CODE || '?') + ')';
+        bodyEl.innerHTML =
+            '<div class="ta-set-group"><div class="ta-set-cap">账户</div>' +
+            '<div class="ta-card ta-set-row"><span class="ta-set-ic"><i class="ri-shield-user-line"></i></span>' +
+            '<span class="ta-set-main"><b>' + escapeHtml(name) + '</b><span class="ta-set-sub">教师账号已登录</span></span>' +
+            '<button type="button" class="ta-btn-mini danger" id="taSetLogout">退出登录</button></div></div>' +
+
+            '<div class="ta-set-group"><div class="ta-set-cap">主题</div><div class="ta-card ta-set-themes">' +
+            themes.map(function (t) {
+                return '<button type="button" class="ta-set-theme' + (t.id === current ? ' active' : '') + '" data-tid="' + t.id + '">' +
+                    '<span class="ta-theme-swatch" style="background:' + (THEME_SWATCH[t.id] ? THEME_SWATCH[t.id].primary : t.primary) + ';">' + (sw[t.id] || '雅') + '</span>' +
+                    '<span>' + escapeHtml(t.name.split(' · ')[0]) + '</span>' +
+                    (t.id === current ? '<i class="ri-check-line"></i>' : '') +
+                    '</button>';
+            }).join('') + '</div></div>' +
+
+            '<div class="ta-set-group"><div class="ta-set-cap">课堂设备</div>' +
+            '<button type="button" class="ta-card ta-set-row" style="width:100%;text-align:left;" data-task-sub="../magic.php" data-task-title="授权白板登录">' +
+            '<span class="ta-set-ic"><i class="ri-qr-code-line"></i></span>' +
+            '<span class="ta-set-main"><b>授权白板登录</b><span class="ta-set-sub">扫码或六位数字码，45 分钟</span></span>' +
+            '<i class="ri-arrow-right-s-line ta-stat-chev"></i></button></div>' +
+
+            '<div class="ta-set-group"><div class="ta-set-cap">关于</div>' +
+            '<div class="ta-card ta-set-row"><span class="ta-set-ic"><i class="ri-apps-2-line"></i></span>' +
+            '<span class="ta-set-main"><b>班级成长助教 · 教师端</b><span class="ta-set-sub">版本 v' + escapeHtml(ver) + '</span></span>' +
+            '<button type="button" class="ta-btn-mini" id="taSetUpdate">检查更新</button></div></div>' +
+
+            '<div style="height:24px;"></div>';
+
+        var lg = $('#taSetLogout', bodyEl);
+        if (lg) lg.addEventListener('click', doLogout);
+        var up = $('#taSetUpdate', bodyEl);
+        if (up) up.addEventListener('click', function () { checkUpdate(true); });
+        var wb = $('[data-task-sub]', bodyEl);
+        if (wb) wb.addEventListener('click', function () { closeTask(); setTimeout(function () { openSub(wb.dataset.taskSub, wb.dataset.taskTitle); }, 60); });
+        $all('.ta-set-theme', bodyEl).forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                applyTheme(btn.dataset.tid, btn);
+                setTimeout(function () { TE.tasks.settings(bodyEl); }, prefersReducedMotion ? 50 : 500);
+            });
+        });
+    };
+
     // ===================== 启动 =====================
     document.addEventListener('DOMContentLoaded', function () {
         if (view === 'login') {
@@ -790,8 +1006,6 @@
         bindSheet();
         bindPullRefresh();
 
-        bindFrame($('#taFrame-essay'), 'taSkel-essay');
-        bindFrame($('#taFrame-score'), 'taSkel-score');
         bindFrame($('#taFrame-sub'), 'taSkel-sub');
 
         var subBack = $('#taSubBack');
@@ -805,6 +1019,14 @@
                 frame.contentWindow.location.reload();
             }
         });
+
+        // 任务模式返回栏
+        var taskBack = $('#taTaskBack');
+        if (taskBack) taskBack.addEventListener('click', function () { requestCloseTask(); });
+
+        // 真实页签模块（作文 / 量化）
+        try { if (window.TE && TE.essay && TE.essay.init) TE.essay.init($('#taEssayApp')); } catch (e) {}
+        try { if (window.TE && TE.score && TE.score.init) TE.score.init($('#taScoreApp')); } catch (e) {}
 
         loadDashboard();
         syncServerTheme();

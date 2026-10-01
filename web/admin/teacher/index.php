@@ -67,7 +67,7 @@ $loggedIn = Auth::isAdminLoggedIn();
         <section class="ta-tab active" id="taTab-home" role="tabpanel" aria-label="工作台">
             <div class="ta-section">
                 <div class="ta-quick-grid">
-                    <button type="button" class="ta-quick-item" data-sub="../essay.php?action=camera" data-title="拍照批改">
+                    <button type="button" class="ta-quick-item" data-task="camera" data-title="拍照批改">
                         <span class="ta-quick-icon v2"><i class="ri-camera-fill"></i></span>
                         <span class="ta-quick-name">拍照批改</span>
                     </button>
@@ -129,20 +129,14 @@ $loggedIn = Auth::isAdminLoggedIn();
             </div>
         </section>
 
-        <!-- Tab 2：作文批改（iframe） -->
+        <!-- Tab 2：作文批改（真实手机页面） -->
         <section class="ta-tab" id="taTab-essay" role="tabpanel" aria-label="作文批改">
-            <div class="ta-frame-wrap">
-                <div class="ta-frame-skeleton" id="taSkel-essay"><span class="ta-spin"></span><span>正在载入作文批改…</span></div>
-                <iframe id="taFrame-essay" title="作文批改" data-src="../essay.php"></iframe>
-            </div>
+            <div id="taEssayApp"></div>
         </section>
 
-        <!-- Tab 3：量化考核（iframe） -->
+        <!-- Tab 3：量化考核（真实手机页面） -->
         <section class="ta-tab" id="taTab-score" role="tabpanel" aria-label="量化考核">
-            <div class="ta-frame-wrap">
-                <div class="ta-frame-skeleton" id="taSkel-score"><span class="ta-spin"></span><span>正在载入量化考核…</span></div>
-                <iframe id="taFrame-score" title="量化考核" data-src="../score.php"></iframe>
-            </div>
+            <div id="taScoreApp"></div>
         </section>
 
         <!-- Tab 4：全部 -->
@@ -151,7 +145,17 @@ $loggedIn = Auth::isAdminLoggedIn();
             <div style="height:16px;"></div>
         </section>
 
-        <!-- 二级功能页（独立容器，底栏保持稳定） -->
+        <!-- 任务模式（详情/拍照/设置：隐藏底栏，统一返回栏） -->
+        <section class="ta-tab" id="taTab-task" role="tabpanel" aria-label="任务">
+            <div class="ta-task-head">
+                <button type="button" class="ta-sub-btn" id="taTaskBack" aria-label="返回"><i class="ri-arrow-left-line"></i></button>
+                <span class="ta-sub-title" id="taTaskTitle">任务</span>
+                <span class="ta-task-head-r" id="taTaskHeadRight"></span>
+            </div>
+            <div class="ta-task-body" id="taTaskBody"></div>
+        </section>
+
+        <!-- 二级功能页（低频页 iframe 容器，同样为任务模式） -->
         <section class="ta-tab" id="taTab-sub" role="tabpanel" aria-label="功能页">
             <div class="ta-sub-head">
                 <button type="button" class="ta-sub-btn" id="taSubBack" aria-label="返回"><i class="ri-arrow-left-line"></i></button>
@@ -164,6 +168,27 @@ $loggedIn = Auth::isAdminLoggedIn();
             </div>
         </section>
     </main>
+
+    <!-- 通用确认弹窗 -->
+    <div class="ta-dialog-mask" id="taDialogMask" hidden>
+        <div class="ta-dialog" role="alertdialog" aria-modal="true">
+            <div class="ta-dialog-msg" id="taDialogMsg"></div>
+            <div class="ta-dialog-btns">
+                <button type="button" class="ta-dialog-btn" id="taDialogCancel">取消</button>
+                <button type="button" class="ta-dialog-btn primary" id="taDialogOk">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用底部选择面板（学生/班级/模型/命题等） -->
+    <div class="ta-sheet-mask" id="taGenMask"></div>
+    <div class="ta-sheet" id="taGenSheet">
+        <div class="ta-sheet-head">
+            <span class="ta-sheet-title" id="taGenTitle">选择</span>
+            <button type="button" class="ta-sheet-close" id="taGenClose" aria-label="关闭"><i class="ri-close-line"></i></button>
+        </div>
+        <div id="taGenBody"></div>
+    </div>
 
     <!-- 固定底部导航（App 内唯一一套，永不变化） -->
     <nav class="ta-tabbar" aria-label="主导航">
@@ -195,5 +220,7 @@ $loggedIn = Auth::isAdminLoggedIn();
 <?php endif; ?>
 
 <script src="<?= auto_ver('teacher.js') ?>"></script>
+<script src="<?= auto_ver('teacher-essay.js') ?>"></script>
+<script src="<?= auto_ver('teacher-score.js') ?>"></script>
 </body>
 </html>
