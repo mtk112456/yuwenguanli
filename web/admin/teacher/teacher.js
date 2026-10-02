@@ -89,6 +89,7 @@
                 if (data.code === 0) {
                     var d = data.data || {};
                     try {
+                        localStorage.setItem('ta_admin_id', String(d.id || ''));
                         localStorage.setItem('admin_name', d.admin_name || d.nickname || d.username || '管理员');
                         if (d.username) localStorage.setItem('admin_username', d.username);
                         if (d.nickname !== undefined) localStorage.setItem('admin_nickname', d.nickname);
