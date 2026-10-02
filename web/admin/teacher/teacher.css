@@ -974,3 +974,21 @@ body.ta-task-mode .ta-main { padding-bottom: 0; }
 .ta-cam-viewbody img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .ta-cam-viewactions { padding-bottom: calc(12px + env(safe-area-inset-bottom,0px)); justify-content: center; }
 @media(min-width:700px){ .ta-camera-task .ta-gphotos { grid-template-columns: repeat(2,minmax(0,1fr)); } .ta-camera-task .ta-ph-preview img { height: 320px; } }
+
+/* Class-size photo batches: bounded DOM, compact sheet, full-screen review. */
+.ta-camera-task .ta-gphotos { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; }
+.ta-camera-task .ta-ph-preview img { height: 96px; width: 100%; object-fit: contain; transition: transform .12s; }
+.ta-camera-task .ta-ph-preview span { font-size: 10px; padding: 4px 2px; }
+.ta-camera-task .ta-ph-tools { gap: 3px; padding: 0 3px 5px; }
+.ta-camera-task .ta-ph-tools button { min-height: 34px; padding: 4px 6px; font-size: 10px; flex: 1; }
+.ta-camera-task .ta-ph-tools [data-act=prev], .ta-camera-task .ta-ph-tools [data-act=next], .ta-camera-task .ta-ph-tools [data-act=split], .ta-camera-task .ta-ph-tools [data-act=del] { display:none; }
+.ta-camera-task .ta-ph-state { padding: 4px; font-size: 10px; }
+.ta-camera-task .ta-ph-error { padding: 4px; font-size: 10px; max-height: 44px; overflow:auto; }
+.ta-camera-task .ta-ph-notice { display:none; }
+.ta-cam-pager { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:6px 14px; }
+.ta-cam-pager span { font-size:12px; color:var(--c-ink-muted); }
+.ta-cam-pager button { min-height:40px; border:1px solid var(--c-border); border-radius:10px; padding:6px 12px; color:var(--c-ink); background:var(--c-bg-card); }
+.ta-cam-more { display:flex; flex-direction:column; gap:12px; padding:12px; }
+.ta-cam-viewactions { gap:6px; }
+.ta-cam-viewactions button { padding:8px 9px; font-size:12px; }
+@media(min-width:700px){.ta-camera-task .ta-gphotos {grid-template-columns:repeat(6,minmax(0,1fr));} .ta-camera-task .ta-ph-preview img {height:130px;} }

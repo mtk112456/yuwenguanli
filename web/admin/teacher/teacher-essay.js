@@ -712,7 +712,7 @@
     var archiving = false;
     var jobFailed = false;
     var batchMode = 'notebook', arranging = false, splitApplied = false;
-    var currentUpload = 0;
+    var currentUpload = 0, viewPage = 0, perPage = 24, pauseReason = "";
 
     function gidMeta(gid) {
         if (!meta[gid]) meta[gid] = { student: null, needsConfirm: true, title: '', archivedSubId: 0 };
@@ -772,22 +772,27 @@
 
     function render() {
         var groups = buildGroups(), locked = uploading || arranging || archiving;
-        bodyEl.querySelector('#taCamGrid').innerHTML = groups.map(function(g,gi) {
+        var maxPage=Math.max(0,Math.ceil(photos.length/perPage)-1);viewPage=Math.min(viewPage,maxPage);
+        var visible=photos.slice(viewPage*perPage,(viewPage+1)*perPage);
+        var uidSet={};visible.forEach(function(p){uidSet[p.uid]=true;});
+        var shownGroups=groups.filter(function(g){return g.photos.some(function(p){return uidSet[p.uid];});});
+        bodyEl.querySelector('#taCamGrid').innerHTML = shownGroups.map(function(g) {
+            var gi=groups.indexOf(g);
             var archived = !!g.archivedSubId;
             var label = archived ? '已存档' : (!g.student ? '待确认学生' : (g.needsConfirm ? '需确认识别姓名' : g.student.name));
             return '<section class="ta-gcard"><div class="ta-ghead"><strong class="ta-gtitle">' +
                 (!splitApplied && batchMode === 'notebook' ? '待分篇照片' : '第 ' + (gi+1) + ' 篇') + ' · ' + g.photos.length + ' 页</strong>' +
                 '<span class="ta-badge ' + (g.student && !g.needsConfirm ? 'ok' : 'warn') + '">' + esc(label) + '</span></div>' +
-                '<div class="ta-gphotos">' + g.photos.map(function(p) {
+                '<div class="ta-gphotos">' + g.photos.filter(function(p){return uidSet[p.uid];}).map(function(p) {
                     var idx=photoIndex(p.uid), done=p.status==='done';
                     var state=done?'识别完成':p.status==='uploading'?(p.progress===100?'上传完成，正在识别文字…':'上传中 '+p.progress+'%'):p.status==='error'?'识别失败':'待识别';
-                    var imageSrc=done && p.url ? TA.img(p.url) : p.blobUrl;
-                    return '<article class="ta-photo-cell" data-uid="'+p.uid+'"><button type="button" class="ta-ph-preview" data-act="view" aria-label="放大第'+(idx+1)+'张照片"><img src="'+esc(imageSrc)+'" alt="第'+(idx+1)+'张完整作文照片"><span>第 '+(idx+1)+' 张 · 点图放大</span></button>'+
+                    var imageSrc=done && p.url ? TA.img(p.url) : (p.editSource || p.blobUrl);
+                    return '<article class="ta-photo-cell" data-uid="'+p.uid+'"><button type="button" class="ta-ph-preview" data-act="view" aria-label="放大第'+(idx+1)+'张照片"><img src="'+esc(imageSrc)+'" style="transform:rotate('+(p.rotation||0)+'deg)" loading="lazy" alt="第'+(idx+1)+'张完整作文照片"><span>第 '+(idx+1)+' 张 · 点图放大</span></button>'+
                         '<div class="ta-ph-state '+(p.status==='error'?'err':'')+'">'+esc(state)+'</div>'+
                         (p.error?'<div class="ta-ph-error">'+esc(p.error)+'</div>':'')+
                         (p.notice?'<div class="ta-ph-notice">'+esc(p.notice)+'</div>':'')+
                         '<div class="ta-ph-tools">'+
-                        [['prev','前移'],['next','后移'],['rot','旋转90°'],['split','从此页分篇'],['del','移除']].map(function(a){return '<button type="button" data-act="'+a[0]+'"'+(locked||archived?' disabled':'')+'>'+a[1]+'</button>';}).join('')+
+                        [['rot','旋转'],['more','更多'],['prev','前移'],['next','后移'],['split','从此页分篇'],['del','移除']].map(function(a){return '<button type="button" data-act="'+a[0]+'"'+(locked||archived?' disabled':'')+'>'+a[1]+'</button>';}).join('')+
                         (p.status==='error'?'<button type="button" data-act="retry"'+(locked?' disabled':'')+'>重试此页</button>':'')+'</div></article>';
                 }).join('')+'</div>'+
                 '<div class="ta-gfooter"><button type="button" class="ta-btn-mini" data-gmerge="'+g.gid+'"'+(gi===0||locked||archived?' disabled':'')+'>并入上篇</button>'+
@@ -803,6 +808,10 @@
         setCamBusy(locked);
         ['taCamMode','taCamOrient','taCamRotateAll'].forEach(function(id){bodyEl.querySelector('#'+id).disabled=locked||!!archivedSubCount();});
         bodyEl.querySelectorAll('.ta-cam-src input').forEach(function(el){el.disabled=locked;});
+        var pager=bodyEl.querySelector('#taCamPager');
+        pager.innerHTML=photos.length?'<button type="button" data-page="-1"'+(viewPage===0?' disabled':'')+'>上一页</button><span>第 '+(viewPage+1)+'/'+(maxPage+1)+' 页 · '+photos.length+' 张</span><button type="button" data-page="1"'+(viewPage===maxPage?' disabled':'')+'>下一页</button>':'';
+        pager.querySelectorAll('[data-page]').forEach(function(b){b.onclick=function(){viewPage+=Number(b.dataset.page);render();bodyEl.scrollTop=0;window.scrollTo(0,0);};});
+        if(pauseReason)bodyEl.querySelector('#taCamMeta').textContent=pauseReason+'；队列已暂停，成功照片保留，恢复后点击上传识别继续。';
         bindGrid();
     }
 
@@ -827,6 +836,10 @@
                 var idx=photoIndex(cell.dataset.uid),p=photos[idx]; if(!p)return;
                 var act=b.dataset.act;
                 if(act==='view'){openPhotoViewer(p.uid);return;}
+                if(act==='more'){
+                    var wrap=document.createElement('div');wrap.innerHTML='<div class="ta-cam-more">'+[['prev','前移一页'],['next','后移一页'],['split','从此页另起一篇'],['del','移除此页']].map(function(a){return '<button type="button" class="ta-chip" data-more="'+a[0]+'">'+a[1]+'</button>';}).join('')+'</div>';
+                    wrap.querySelectorAll('[data-more]').forEach(function(x){x.onclick=function(){TA.closeSheet();cell.querySelector('[data-act="'+x.dataset.more+'"]').click();};});TA.openSheet('第 '+(idx+1)+' 张照片',wrap);return;
+                }
                 if(uploading||arranging||archiving||gidMeta(p.gid).archivedSubId)return;
                 if(act==='retry'){await uploadAll(p.uid);return;}
                 if(act==='rot'){arranging=true;render();await rotatePhoto(p,90);arranging=false;render();return;}
@@ -854,43 +867,33 @@
     }
 
     function openPhotoViewer(uid) {
-        var p=photos[photoIndex(uid)];if(!p)return;
+        var idx=photoIndex(uid),p=photos[idx];if(!p)return;
         var wrap=document.createElement('div');wrap.className='ta-cam-viewer';
-        wrap.innerHTML='<div class="ta-cam-viewhead"><button type="button" data-close>关闭</button><span>完整照片 · 可双指缩放</span></div><div class="ta-cam-viewbody"><img src="'+esc(p.status==='done'&&p.url?TA.img(p.url):p.blobUrl)+'" alt="作文照片"></div><div class="ta-cam-viewactions">'+[90,180,270].map(function(d){return '<button type="button" data-deg="'+d+'">'+(d===270?'向左90°':d===180?'旋转180°':'向右90°')+'</button>';}).join('')+'</div>';
+        wrap.innerHTML='<div class="ta-cam-viewhead"><button type="button" data-close>关闭</button><span data-caption></span></div><div class="ta-cam-viewbody"><img alt="作文照片"></div><div class="ta-cam-viewactions"><button type="button" data-nav="-1">上一张</button>'+[90,180,270].map(function(d){return '<button type="button" data-deg="'+d+'">'+(d===270?'左转':d===180?'180°':'右转')+'</button>';}).join('')+'<button type="button" data-nav="1">下一张</button></div>';
+        function show(){p=photos[idx];var img=wrap.querySelector('img');img.src=p.status==='done'&&p.url?TA.img(p.url):p.editSource||p.blobUrl;img.style.transform='rotate('+(p.rotation||0)+'deg)';img.style.maxWidth=(p.rotation%180?'75%':'100%');img.style.maxHeight=(p.rotation%180?'75%':'100%');wrap.querySelector('[data-caption]').textContent='第 '+(idx+1)+'/'+photos.length+' 张 · 点击旋转即时预览';}
         wrap.querySelector('[data-close]').onclick=function(){wrap.remove();};
-        wrap.querySelectorAll('[data-deg]').forEach(function(b){b.onclick=async function(){
-            if(uploading||arranging||archiving||gidMeta(p.gid).archivedSubId){TA.toast('当前正在处理或已存档，不能旋转');return;}
-            arranging=true;wrap.querySelectorAll('[data-deg]').forEach(function(x){x.disabled=true;});render();
-            await rotatePhoto(p,Number(b.dataset.deg));arranging=false;render();wrap.querySelector('img').src=p.blobUrl;
-            wrap.querySelectorAll('[data-deg]').forEach(function(x){x.disabled=false;});
-        };});document.body.appendChild(wrap);
+        wrap.querySelectorAll('[data-nav]').forEach(function(b){b.onclick=function(){idx=Math.max(0,Math.min(photos.length-1,idx+Number(b.dataset.nav)));show();};});
+        wrap.querySelectorAll('[data-deg]').forEach(function(b){b.onclick=function(){if(uploading||arranging||archiving||gidMeta(p.gid).archivedSubId){TA.toast('当前正在处理或已存档，不能旋转');return;}rotatePhoto(p,Number(b.dataset.deg));show();render();};});show();document.body.appendChild(wrap);
     }
 
-    function imageCanvas(p,maxEdge) {
-        return new Promise(function(resolve,reject){var img=new Image();
-            img.onload=function(){var scale=Math.min(1,(maxEdge||Infinity)/Math.max(img.naturalWidth,img.naturalHeight));
-                var cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(img.naturalWidth*scale));cv.height=Math.max(1,Math.round(img.naturalHeight*scale));
-                cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);resolve(cv);};
-            img.onerror=function(){reject(new Error('无法读取照片，请改选 JPG/PNG 照片'));};img.src=p.status==='done'&&p.url?TA.img(p.url):p.blobUrl;
-        });
+    function imageCanvas(p,maxEdge,applyRotation) {
+        return new Promise(function(resolve,reject){var img=new Image();img.onload=function(){
+            var scale=Math.min(1,(maxEdge||Infinity)/Math.max(img.naturalWidth,img.naturalHeight));
+            var w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale)),deg=applyRotation?(p.rotation||0):0;
+            var cv=document.createElement('canvas'),quarter=deg%180!==0;cv.width=quarter?h:w;cv.height=quarter?w:h;
+            var ctx=cv.getContext('2d');ctx.translate(cv.width/2,cv.height/2);ctx.rotate(deg*Math.PI/180);ctx.drawImage(img,-w/2,-h/2,w,h);resolve(cv);
+        };img.onerror=function(){reject(new Error('无法读取照片，请改选 JPG/PNG 照片'));};img.src=p.status==='done'&&p.url?TA.img(p.url):p.editSource||p.blobUrl;});
     }
-    function invalidate(p) {p.status='local';p.url='';p.ocr=null;p.error='';p.prepared=false;}
-    async function rotatePhoto(p,degrees) {
-        try {
-            var src=await imageCanvas(p),cv=document.createElement('canvas'),quarter=degrees===90||degrees===270;
-            cv.width=quarter?src.height:src.width;cv.height=quarter?src.width:src.height;
-            var ctx=cv.getContext('2d');ctx.translate(cv.width/2,cv.height/2);ctx.rotate(degrees*Math.PI/180);ctx.drawImage(src,-src.width/2,-src.height/2);
-            var blob=await new Promise(function(resolve){cv.toBlob(resolve,'image/jpeg',0.92);});if(!blob)throw new Error('旋转失败');
-            URL.revokeObjectURL(p.blobUrl);p.file=new File([blob],p.file.name.replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg',lastModified:p.file.lastModified});p.blobUrl=URL.createObjectURL(blob);
-            invalidate(p);p.notice='已旋转 '+degrees+'°；按新方向识别';return true;
-        }catch(e){p.error=e.message;TA.toast(e.message);return false;}
+    function invalidate(p){p.status='local';p.url='';p.ocr=null;p.error='';p.prepared=false;}
+    function rotatePhoto(p,degrees){
+        if(p.status==='done'&&p.url){p.editSource=TA.img(p.url);p.rotation=0;}
+        p.rotation=((p.rotation||0)+degrees)%360;invalidate(p);p.notice='方向已调整，上传时按此方向处理';return Promise.resolve(true);
     }
-    async function preparePhoto(p) {
+    async function preparePhoto(p){
         if(p.prepared)return;
-        var cv=await imageCanvas(p,2400),blob=await new Promise(function(resolve){cv.toBlob(resolve,'image/jpeg',0.9);});
+        var cv=await imageCanvas(p,2400,true),blob=await new Promise(function(resolve){cv.toBlob(resolve,'image/jpeg',0.9);});
         if(!blob)throw new Error('照片转换失败，请重新选择');
-        p.file=new File([blob],p.file.name.replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg',lastModified:p.file.lastModified});
-        p.prepared=true;
+        p.file=new File([blob],p.file.name.replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg',lastModified:p.file.lastModified});p.prepared=true;
     }
 
     function addFiles(files) {
@@ -908,16 +911,16 @@
         return new Promise(function(resolve){
             var xhr=new XMLHttpRequest(),settled=false;
             function finish(error,data){if(settled)return;settled=true;
-                if(error){p.status='error';p.error=error;}else{p.status='done';p.url=data.image_url;p.ocr=data;
+                if(error){p.status='error';p.error=error;}else{p.status='done';p.url=data.image_url;p.ocr=data;p.rotation=0;p.editSource='';
                     p.notice=data.rotation_applied?'识别时自动旋转 '+data.rotation_applied+'°（已显示扶正图）':data.orientation_confidence==='low'?'方向不确定，请点图检查':'方向检查完成';}
                 render();resolve();
             }
             xhr.open('POST','../../api/admin/essay/ocr.php');xhr.timeout=240000;
             xhr.upload.addEventListener('progress',function(e){if(e.lengthComputable){p.progress=Math.round(e.loaded/e.total*100);var el=bodyEl.querySelector('[data-uid="'+p.uid+'"] .ta-ph-state');if(el)el.textContent=p.progress===100?'上传完成，正在识别文字…':'上传中 '+p.progress+'%';}});
             xhr.onload=function(){
-                var data;try{data=JSON.parse(xhr.responseText.replace(/^\uFEFF/,''));}catch(e){finish('识别服务返回异常（HTTP '+xhr.status+'），请重试此页');return;}
+                var data;try{data=JSON.parse(xhr.responseText.replace(/^\uFEFF/,''));}catch(e){if(xhr.status===503){pauseReason='识别服务暂时不可用（HTTP 503）';p.pause=true;}finish('识别服务返回异常（HTTP '+xhr.status+'），请重试此页');return;}
                 if(xhr.status>=200&&xhr.status<300&&Number(data.code)===0&&data.data&&data.data.image_url)finish(null,data.data);
-                else finish(data.msg||data.message||(xhr.status===401?'登录已失效，请重新登录':'识别失败（HTTP '+xhr.status+'）'));
+                else {if(xhr.status===503||Number(data.code)===503){pauseReason=data.msg||data.message||'识别服务暂时维护中';p.pause=true;}finish(data.msg||data.message||(xhr.status===401?'登录已失效，请重新登录':'识别失败（HTTP '+xhr.status+'）'));}
             };
             xhr.onerror=function(){finish('网络连接中断，成功页已保留；请仅重试此页');};
             xhr.ontimeout=function(){finish('识别等待超时，可能仍在服务器处理；稍后仅重试此页（服务器支持缓存）');};
@@ -944,12 +947,12 @@
         if(typeof onlyUid!=='string')onlyUid='';
         if(uploading||arranging||archiving)return;
         if(!photos.length){TA.toast('请先拍摄或选择照片');return;}
-        uploading=true;
+        uploading=true;pauseReason='';
         try{
             for(var i=0;i<photos.length;i++){
                 var p=photos[i];if(p.status==='done'||gidMeta(p.gid).archivedSubId||(onlyUid&&p.uid!==onlyUid))continue;
                 currentUpload=i+1;render();
-                try{await preparePhoto(p);await uploadOne(p,i);}catch(e){p.status='error';p.error=e.message;render();}
+                p.pause=false;try{await preparePhoto(p);await uploadOne(p,i);if(p.pause)break;}catch(e){p.status='error';p.error=e.message;render();}
             }
             await loadStudentCache();applySplits();
         }finally{uploading=false;currentUpload=0;render();}
@@ -961,11 +964,11 @@
         if(uploading||arranging||archiving||!photos.length)return;
         arranging=true;render();var uncertain=0;
         try{for(var i=0;i<photos.length;i++){
-            var p=photos[i];if(p.status==='done'||gidMeta(p.gid).archivedSubId)continue;
-            try{var cv=await imageCanvas(p,1200),res=await TA.request('../../api/admin/essay/detect_rotation.php',{method:'POST',body:TA.toForm({image:cv.toDataURL('image/jpeg',0.8)})});
+            var p=photos[i];if(i<viewPage*perPage||i>=(viewPage+1)*perPage||p.status==='done'||gidMeta(p.gid).archivedSubId)continue;
+            try{var cv=await imageCanvas(p,1200,true),res=await TA.request('../../api/admin/essay/detect_rotation.php',{method:'POST',body:TA.toForm({image:cv.toDataURL('image/jpeg',0.8)})});
                 var data=res.data||{},deg=Number(data.rotation_degrees);
                 if(Number(res.code)===0&&data.confidence==='high'&&[0,90,180,270].indexOf(deg)>=0){if(deg)await rotatePhoto(p,deg);else p.notice='方向检查通过';}
-                else{uncertain++;p.notice='方向无法可靠判断，请点图放大并手动旋转';}
+                else{uncertain++;p.notice=res.msg||'方向无法可靠判断，请点图放大并手动旋转';if(Number(res.code)!==0){TA.toast(p.notice+'，方向检查已停止');break;}}
             }catch(e){uncertain++;p.notice='方向服务暂不可用，请手动旋转';}render();
         }}finally{arranging=false;render();}
         TA.toast(uncertain?uncertain+' 张方向不确定，请手动检查':'方向检查完成（未调用批改模型）');
@@ -1099,8 +1102,8 @@
 
     bodyEl.classList.add('ta-camera-task');
     bodyEl.innerHTML='<div class="ta-cam-src"><label class="ta-cam-btn primary">拍照<input type="file" accept="image/*" capture="environment" hidden></label><label class="ta-cam-btn">相册多选<input type="file" accept="image/*" multiple hidden></label></div>'+
-        '<div class="ta-cam-options"><label>照片形式<select class="ta-input" id="taCamMode"><option value="notebook">作文本：封面＋正文，自动分篇</option><option value="single_sheet">整张作文：每张一篇</option></select></label><div class="ta-cam-direction"><button type="button" class="ta-chip" id="taCamOrient">智能检查方向</button><button type="button" class="ta-chip" id="taCamRotateAll">全部旋转90°</button></div><p>先点照片放大检查横竖和倒置。自动扶正不确定时保留原图，由你确认。</p></div>'+
-        '<div class="ta-cam-meta" id="taCamMeta" role="status" aria-live="polite"></div><div class="ta-photo-grid" id="taCamGrid"></div>'+
+        '<div class="ta-cam-options"><label>照片形式<select class="ta-input" id="taCamMode"><option value="notebook">作文本：封面＋正文，自动分篇</option><option value="single_sheet">整张作文：每张一篇</option></select></label><div class="ta-cam-direction"><button type="button" class="ta-chip" id="taCamOrient">检查本页方向</button><button type="button" class="ta-chip" id="taCamRotateAll">全部旋转90°</button></div><p>缩略图分页浏览，点图放大并连续切换。旋转即时预览，上传时才处理图片；识别过程会自动检查方向，无需全班先重复检查。</p></div>'+
+        '<div class="ta-cam-pager" id="taCamPager"></div><div class="ta-cam-meta" id="taCamMeta" role="status" aria-live="polite"></div><div class="ta-photo-grid" id="taCamGrid"></div>'+
         '<div class="ta-d-actions stack"><button type="button" class="ta-btn-primary wide" id="taCamUpload">上传识别</button><span class="ta-d-row"><button type="button" class="ta-btn-danger2" id="taCamSave">仅存档</button><button type="button" class="ta-btn-primary" id="taCamGrade">存档并批改</button></span></div>';
     bodyEl.querySelectorAll('.ta-cam-src input').forEach(function(input){input.addEventListener('change',function(){addFiles(input.files);input.value='';});});
     bodyEl.querySelector('#taCamMode').onchange=function(){batchMode=this.value;

@@ -1,0 +1,4 @@
+{"input_rotation":0,"seconds":3.89,"code":0,"rotation_degrees":0,"confidence":"high","pass":true}
+{"input_rotation":90,"seconds":3.94,"code":0,"rotation_degrees":270,"confidence":"high","pass":true}
+{"input_rotation":180,"seconds":4.25,"code":0,"rotation_degrees":180,"confidence":"high","pass":true}
+{"input_rotation":270,"seconds":4.27,"code":0,"rotation_degrees":90,"confidence":"high","pass":true}
