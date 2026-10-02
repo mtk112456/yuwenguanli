@@ -7,7 +7,8 @@ const path = require('path');
 const SRC = 'D:/DeskBox/班级量化考核系统/班级量化考核管理系统网页前后端/admin/teacher';
 const DST = path.join(__dirname, 'web', 'admin', 'teacher');
 
-const FILES = ['index.php', 'teacher.css', 'teacher.js', 'app-update.json'];
+// 自动枚举主站目录全部文件，新增模块不会被清单遗漏
+const FILES = fs.readdirSync(SRC).filter(f => fs.statSync(path.join(SRC, f)).isFile());
 
 fs.mkdirSync(DST, { recursive: true });
 let changed = 0;
