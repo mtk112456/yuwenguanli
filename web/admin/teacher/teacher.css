@@ -1005,3 +1005,17 @@ body.ta-task-mode .ta-main { padding-bottom: 0; }
 .ta-stat-item.ok b { color: var(--c-bamboo); }
 .ta-stat-item.bad b { color: var(--c-cinnabar); }
 .ta-stat-item.piece { font-weight: 700; color: var(--c-primary); font-family: var(--font-serif); }
+
+/* 课文选择栏（全宽醒目） */
+.ta-piece-select {
+    display: flex; align-items: center; gap: 9px;
+    width: calc(100% - 28px); margin: 8px 14px 0;
+    min-height: 50px; padding: 0 14px;
+    background: var(--c-bg-card); border: 1.5px solid var(--c-primary);
+    border-radius: var(--c-card-radius); color: var(--c-primary);
+    font-size: 16px; font-weight: 700; font-family: var(--font-serif);
+    box-shadow: 0 2px 8px var(--c-primary-soft);
+}
+.ta-piece-select:active { background: var(--c-primary-soft); }
+.ta-piece-select .ta-piece-name { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ta-piece-select .ta-piece-arrow { flex-shrink: 0; font-size: 20px; }
