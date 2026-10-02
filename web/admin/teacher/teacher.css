@@ -939,3 +939,8 @@ body.ta-task-mode .ta-main { padding-bottom: 0; }
 .ta-piece-chip.active { border-color: var(--c-primary); background: var(--c-primary-soft); color: var(--c-primary); }
 .ta-piece-chip.bad.active { border-color: var(--c-cinnabar); background: rgba(184, 59, 50, 0.08); color: var(--c-cinnabar); }
 .ta-pick-cap.warnline { color: var(--c-amber); }
+
+/* 课堂速记待确认入口 */
+#taCmPend { margin: 8px 14px 0; }
+#taCmPend:empty { display: none; }
+#taCmPend .ta-recent-item { width: 100%; }
