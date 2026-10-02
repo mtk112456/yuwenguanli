@@ -453,7 +453,7 @@
                 { name: '数据概览', icon: 'ri-dashboard-3-line', sub: '../index.php', title: '数据概览' },
                 { name: '学情档案', icon: 'ri-brain-line', sub: '../coach.php', title: '学情分析与档案' },
                 { name: '课堂速记', icon: 'ri-flashlight-line', sub: '../classroom.php', title: '课堂速记' },
-                { name: '背诵看板', icon: 'ri-book-read-line', sub: '../recite.php', title: '背诵看板' },
+                { name: '背诵看板', icon: 'ri-book-read-line', task: 'recite', title: '背诵看板' },
                 { name: '阅读量化', icon: 'ri-book-3-line', sub: '../reading.php', title: '阅读量化' },
                 { name: '听写打分', icon: 'ri-quill-pen-line', sub: '../dictation.php', title: '听写打分' },
                 { name: '考试管理', icon: 'ri-line-chart-line', sub: '../exam.php', title: '考试管理' },

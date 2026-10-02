@@ -992,3 +992,16 @@ body.ta-task-mode .ta-main { padding-bottom: 0; }
 .ta-cam-viewactions { gap:6px; }
 .ta-cam-viewactions button { padding:8px 9px; font-size:12px; }
 @media(min-width:700px){.ta-camera-task .ta-gphotos {grid-template-columns:repeat(6,minmax(0,1fr));} .ta-camera-task .ta-ph-preview img {height:130px;} }
+
+/* 背诵看板统计栏 */
+.ta-statsbar { display: flex; flex-wrap: wrap; gap: 7px; padding: 8px 14px; }
+.ta-stat-item {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; color: var(--c-ink-sub);
+    background: var(--c-bg-card); border: 1px solid var(--c-border);
+    border-radius: 10px; padding: 5px 10px;
+}
+.ta-stat-item b { font-weight: 800; color: var(--c-primary); }
+.ta-stat-item.ok b { color: var(--c-bamboo); }
+.ta-stat-item.bad b { color: var(--c-cinnabar); }
+.ta-stat-item.piece { font-weight: 700; color: var(--c-primary); font-family: var(--font-serif); }
