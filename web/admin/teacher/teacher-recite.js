@@ -185,15 +185,13 @@
                 if (state.selected[id]) delete state.selected[id];
                 else {
                     var hit = null;
-                    students().forEach(function (s) { if (Number(s.id) === id) hit = s; });
+                    (b.students || []).forEach(function (s) { if (Number(s.id) === id) hit = s; });
                     if (hit) state.selected[id] = hit;
                 }
                 renderList();
             });
         });
     }
-
-    function students() { return state.board ? state.board.students || [] : []; }
 
     // ==================== 批量标记通过 ====================
     function openConfirm() {
