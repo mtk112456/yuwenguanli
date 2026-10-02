@@ -152,28 +152,41 @@ ok((int)$st1['score'] === (int)$before['score'] + 2 && $n1 === 1, 'S1 分数只�
 
 // ---- S2 同键并发重发：真正重叠执行（两个并行子进程） ----
 $k2 = $RUN_ID . '-par';
+$ckA2 = login('ta_test', 'ta-test', 'ta_test');
 $inc = '/tmp/ta/child_inc.php';
-file_put_contents($inc, "<?php\n\$BASE = 'http://127.0.0.1:8080';\n\$COOKIE = " . var_export($ckA, true) . ";\n"
-    . 'function http($path, $post = null) {
-    $hdr = "Content-Type: application/x-www-form-urlencoded\r\nCookie: " . $COOKIE . "\r\n";
-    $ctx = stream_context_create(["http" => ["method" => "POST", "header" => $hdr,
-        "content" => http_build_query($post), "ignore_errors" => true, "timeout" => 40]]);
-    return json_decode(@file_get_contents($BASE . $path, false, $ctx), true) ?: ["code" => -1, "msg" => "HTTP_FAIL"];
+$child = <<<'CHILD'
+<?php
+$config=json_decode(file_get_contents($argv[1]),true);
+$deadline=microtime(true)+10;
+touch($argv[2].'.ready');
+while(!file_exists('/tmp/ta/start.flag') && microtime(true)<$deadline) usleep(10000);
+if(!file_exists('/tmp/ta/start.flag'))exit(3);
+$ctx=stream_context_create(['http'=>['method'=>'POST','header'=>"Content-Type: application/x-www-form-urlencoded\r\nCookie: ".$config['cookie']."\r\n",'content'=>http_build_query($config['post']),'ignore_errors'=>true,'timeout'=>20]]);
+$raw=file_get_contents('http://127.0.0.1:8080/api/admin/score/batch_update.php',false,$ctx);
+$data=json_decode($raw,true);
+if(!is_array($data))exit(4);
+file_put_contents($argv[2],json_encode($data));
+CHILD;
+file_put_contents($inc,$child);
+@unlink('/tmp/ta/start.flag');
+$processes=[];
+foreach(['a'=>$ckA,'b'=>$ckA2] as $label=>$cookie){
+ $out='/tmp/ta/par_'.$label.'.json';@unlink($out);@unlink($out.'.ready');
+ $config='/tmp/ta/config_'.$label.'.json';
+ file_put_contents($config,json_encode(['cookie'=>$cookie,'post'=>['student_ids'=>[$SID],'change_value'=>3,'type'=>'reward','reason'=>'v3-par','source'=>'','op_key'=>$k2]]));chmod($config,0600);
+ $processes[]=proc_open([PHP_BINARY,$inc,$config,$out],[['file','/dev/null','r'],['file','/tmp/ta/child_'.$label.'.stdout','w'],['file','/tmp/ta/child_'.$label.'.stderr','w']],$pipes);
 }
-file_put_contents($argv[1], json_encode(http("/api/admin/score/batch_update.php",
-    ["student_ids[]" => ' . $SID . ', "change_value" => 3, "type" => "reward", "reason" => "v3-par", "source" => "", "op_key" => ' . var_export($k2, true) . '])));
-');
-@unlink('/tmp/ta/par_a.json'); @unlink('/tmp/ta/par_b.json');
-$pA = runChild('require "' . $inc . '";');
-$pB = runChild('require "' . $inc . '";');
-$deadline = time() + 30;
-while ((proc_get_status($pA)['running'] || proc_get_status($pB)['running']) && time() < $deadline) usleep(100000);
-$a = json_decode((string)@file_get_contents('/tmp/ta/par_a.json'), true) ?: ['code' => -1, 'msg' => 'NO_OUTPUT'];
-$b = json_decode((string)@file_get_contents('/tmp/ta/par_b.json'), true) ?: ['code' => -1, 'msg' => 'NO_OUTPUT'];
+$deadline=microtime(true)+10;
+while((!file_exists('/tmp/ta/par_a.json.ready')||!file_exists('/tmp/ta/par_b.json.ready'))&&microtime(true)<$deadline)usleep(10000);
+touch('/tmp/ta/start.flag');
+foreach($processes as $proc){$exit=proc_close($proc);ok($exit===0,'S2 子进程正常退出');}
+$a=json_decode((string)@file_get_contents('/tmp/ta/par_a.json'),true)?:['code'=>-1];
+$b=json_decode((string)@file_get_contents('/tmp/ta/par_b.json'),true)?:['code'=>-1];
+@unlink('/tmp/ta/config_a.json');@unlink('/tmp/ta/config_b.json');
 $st2 = stuState($SID);
 $n2 = (int)db()->query("SELECT COUNT(*) FROM score_log WHERE student_id = $SID AND reason = 'v3-par'")->fetchColumn();
 ok($a['code'] === 0 && $b['code'] === 0, 'S2 并发两请求均正常返回（无错误响应）');
-ok(($a['data']['log_ids'] ?? []) === ($b['data']['log_ids'] ?? []), 'S2 两请求返回同一日志（重放一致）');
+ok(!empty($a['data']['log_ids']) && ($a['data']['log_ids'] ?? []) === ($b['data']['log_ids'] ?? []), 'S2 两请求返回同一日志（重放一致）');
 ok($n2 === 1 && (int)$st2['score'] === (int)$st1['score'] + 3, 'S2 分数只变一次、日志一份');
 
 // ---- S3 同键不同参数：明确拒绝，不修改分数 ----
@@ -199,7 +212,7 @@ $k5 = $RUN_ID . '-res';
 $pre = stuState($SID); $preLogs = (int)db()->query("SELECT COUNT(*) FROM score_log WHERE student_id = $SID")->fetchColumn();
 $q0 = http('/api/admin/score/op_result.php', ['op_key' => $k5]);
 ok(($q0['data']['status'] ?? '') === 'not_found', 'S5 未提交前查询=not_found（不代表失败）');
-http('/api/admin/score/batch_update.php', ['student_ids[]' => $SID, 'change_value' => 1, 'type' => 'reward', 'reason' => 'v3-res', 'source' => '', 'op_key' => $k5], $ckA);
+$resCreate = http('/api/admin/score/batch_update.php', ['student_ids[]' => $SID, 'change_value' => 1, 'type' => 'reward', 'reason' => 'v3-res', 'source' => '', 'op_key' => $k5], $ckA);
 $q1 = http('/api/admin/score/op_result.php', ['op_key' => $k5], $ckA);
 ok(($q1['data']['status'] ?? '') === 'completed' && (int)($q1['data']['success'] ?? 0) === 1, 'S5 完成后查询返回首次结果');
 $post = stuState($SID); $postLogs = (int)db()->query("SELECT COUNT(*) FROM score_log WHERE student_id = $SID")->fetchColumn();
@@ -208,7 +221,7 @@ $q2 = http('/api/admin/score/op_result.php', ['op_key' => $k5], $ckB);
 ok(($q2['data']['status'] ?? '') === 'not_found', 'S5 他人查询按 not_found 隔离');
 
 // ---- S7 归组重试幂等：同日志集合返回原分组 ----
-$logId = (int)db()->query("SELECT id FROM score_log WHERE student_id = $SID AND reason = 'v3-res'")->fetchColumn();
+$logId = (int)($resCreate['data']['log_ids'][0] ?? 0);
 $g1 = http('/api/admin/score/batch_store.php', ['log_ids[]' => $logId, 'content' => 'v3-归组'], $ckA);
 $g2 = http('/api/admin/score/batch_store.php', ['log_ids[]' => $logId, 'content' => 'v3-归组'], $ckA);
 ok($g1['code'] === 0, 'S7 首次归组成功');
@@ -217,7 +230,7 @@ $nGroups = (int)db()->query("SELECT COUNT(*) FROM batch_operations WHERE log_ids
 ok($nGroups === 1, 'S7 分组仅一份');
 
 // ---- S8 重复撤销：首次恢复，二次拒绝且不改分 ----
-$bid = (int)db()->query("SELECT id FROM batch_operations WHERE log_ids = '" . $logId . "'")->fetchColumn();
+$bid = (int)($g1['data']['id'] ?? 0);
 $scoreBeforeUndo = stuState($SID);
 $u1 = http('/api/admin/score/batch_undo.php', ['batch_id' => $bid], $ckA);
 $scoreAfterUndo = stuState($SID);
@@ -226,8 +239,11 @@ $final = stuState($SID);
 ok($u1['code'] === 0, 'S8 首次撤销成功: ' . substr($u1['msg'] ?? '', 0, 60));
 ok($u2['code'] !== 0, 'S8 重复撤销被拒: ' . substr($u2['msg'] ?? '', 0, 60));
 $expectedAfter = (int)$scoreBeforeUndo['score'] - 1;
-ok((int)$final['score'] === $expectedAfter, "S8 撤销后分数=$expectedAfter（撤销前 {$scoreBeforeUndo['score']}）");
+ok((int)$final["score"] === $expectedAfter, sprintf("S8 score=%d (before %d)", $expectedAfter, $scoreBeforeUndo["score"] ?? 0));
 ok((int)$final['score'] === (int)$scoreAfterUndo['score'], 'S8 二次拒绝后分数不变');
+$replayAfterUndo = http('/api/admin/score/batch_update.php', ['student_ids[]' => $SID, 'change_value' => 1, 'type' => 'reward', 'reason' => 'v3-res', 'source' => '', 'op_key' => $k5], $ckA);
+ok(($replayAfterUndo['data']['replayed'] ?? false) === true, 'S9 撤销后原键返回历史结果');
+ok((int)stuState($SID)['score'] === (int)$final['score'] && (int)db()->query('SELECT COUNT(*) FROM score_log WHERE id = ' . $logId)->fetchColumn() === 0, 'S9 撤销后重发不重新加分或创建日志');
 
 // ================= 全失败明细（不存在学生 → no_effect + failed_detail） =================
 $rNoeff = http('/api/admin/score/batch_update.php', ['student_ids[]' => 999999, 'change_value' => -1, 'type' => 'punish', 'reason' => 'v3-noeff', 'source' => '', 'op_key' => $RUN_ID . '-noeff']);
