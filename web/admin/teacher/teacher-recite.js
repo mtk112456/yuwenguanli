@@ -185,14 +185,12 @@
                 if (state.selected[id]) delete state.selected[id];
                 else {
                     var hit = null;
-                    students().forEach(function (s) { if (s.id === id) hit = s; });
+                    students().forEach(function (s) { if (Number(s.id) === id) hit = s; });
                     if (hit) state.selected[id] = hit;
                 }
                 renderList();
             });
         });
-
-        function students() { return state.board ? state.board.students || [] : []; }
     }
 
     function students() { return state.board ? state.board.students || [] : []; }
