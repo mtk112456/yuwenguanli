@@ -944,3 +944,33 @@ body.ta-task-mode .ta-main { padding-bottom: 0; }
 #taCmPend { margin: 8px 14px 0; }
 #taCmPend:empty { display: none; }
 #taCmPend .ta-recent-item { width: 100%; }
+
+/* Camera flow: full-page previews, readable status and accessible controls. */
+.ta-camera-task { padding-bottom: calc(152px + env(safe-area-inset-bottom, 0px)); }
+.ta-camera-task .ta-photo-grid { display: block; padding: 8px 12px 16px; }
+.ta-camera-task .ta-gphotos { grid-template-columns: minmax(0,1fr); gap: 14px; }
+.ta-camera-task .ta-photo-cell { aspect-ratio: auto; overflow: hidden; min-width: 0; background: var(--c-bg-card); }
+.ta-camera-task .ta-ph-preview { display: block; width: 100%; padding: 0; border: 0; background: var(--c-bg); color: var(--c-ink); cursor: zoom-in; }
+.ta-camera-task .ta-ph-preview img { height: 240px; width: 100%; object-fit: contain; }
+.ta-camera-task .ta-ph-preview span { display: block; font-size: 12px; padding: 8px; }
+.ta-camera-task .ta-ph-state, .ta-ph-notice, .ta-ph-error { padding: 8px 10px; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.ta-camera-task .ta-ph-state { font-weight: 700; color: var(--c-bamboo); }
+.ta-camera-task .ta-ph-state.err, .ta-ph-error { color: var(--c-cinnabar); }
+.ta-camera-task .ta-ph-tools { position: static; display: flex; flex-wrap: wrap; gap: 6px; padding: 0 8px 10px; }
+.ta-camera-task .ta-ph-tools button { width: auto; min-height: 40px; height: auto; padding: 7px 10px; font-size: 12px; background: var(--c-bg); border: 1px solid var(--c-border); color: var(--c-ink); white-space: nowrap; }
+.ta-camera-task .ta-ghead { flex-wrap: wrap; }
+.ta-camera-task .ta-gtitle { min-width: 120px; }
+.ta-camera-task .ta-gfooter, .ta-cam-direction { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.ta-camera-task .ta-cam-meta { padding: 10px 14px; line-height: 1.6; font-size: 13px; }
+.ta-cam-options { padding: 10px 14px; color: var(--c-ink); }
+.ta-cam-options label { display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; font-size: 13px; }
+.ta-cam-options select { width: 100%; min-width: 0; }
+.ta-cam-options p { font-size: 12px; line-height: 1.6; color: var(--c-ink-muted); }
+.ta-cam-viewer { position: fixed; inset: 0; z-index: 16000; background: #0d1720; color: white; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top,0px); }
+.ta-cam-viewhead, .ta-cam-viewactions { display: flex; align-items: center; gap: 10px; padding: 12px; flex-wrap: wrap; }
+.ta-cam-viewhead span { font-size: 12px; }
+.ta-cam-viewer button { min-height: 44px; padding: 8px 14px; border-radius: 10px; border: 1px solid #70808e; background: #263744; color: white; }
+.ta-cam-viewbody { flex: 1; min-height: 0; overflow: auto; display: flex; align-items: center; justify-content: center; touch-action: pan-x pan-y pinch-zoom; }
+.ta-cam-viewbody img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.ta-cam-viewactions { padding-bottom: calc(12px + env(safe-area-inset-bottom,0px)); justify-content: center; }
+@media(min-width:700px){ .ta-camera-task .ta-gphotos { grid-template-columns: repeat(2,minmax(0,1fr)); } .ta-camera-task .ta-ph-preview img { height: 320px; } }
