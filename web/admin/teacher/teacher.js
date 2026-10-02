@@ -462,6 +462,7 @@
         },
         {
             name: '班级日常', icon: 'ri-team-line', items: [
+                { name: '课堂速记', icon: 'ri-flashlight-line', task: 'classroom', title: '课堂速记' },
                 { name: '座位管理', icon: 'ri-layout-grid-line', sub: '../seat.php', title: '座位管理' },
                 { name: '值日安排', icon: 'ri-calendar-check-line', sub: '../duty.php', title: '值日安排' },
                 { name: '随机点名', icon: 'ri-dice-line', sub: '../rollcall.php', title: '随机点名' },

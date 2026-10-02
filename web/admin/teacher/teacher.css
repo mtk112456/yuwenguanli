@@ -924,3 +924,16 @@ body.ta-task-mode .ta-main { padding-bottom: 0; }
 .ta-recent-item:active { background: var(--c-primary-soft); }
 
 .ta-ocr-pages { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 4px; }
+
+/* 课堂速记：评价项目 chips */
+.ta-piecebar { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 14px 8px; }
+.ta-piece-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    min-height: 40px; padding: 0 12px; border-radius: 12px;
+    background: var(--c-bg-card); border: 1.5px solid var(--c-border);
+    color: var(--c-ink-sub); font-size: 13px; font-weight: 600;
+}
+.ta-piece-chip b { font-weight: 800; }
+.ta-piece-chip.active { border-color: var(--c-primary); background: var(--c-primary-soft); color: var(--c-primary); }
+.ta-piece-chip.bad.active { border-color: var(--c-cinnabar); background: rgba(184, 59, 50, 0.08); color: var(--c-cinnabar); }
+.ta-pick-cap.warnline { color: var(--c-amber); }

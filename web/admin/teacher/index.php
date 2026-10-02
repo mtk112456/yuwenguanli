@@ -222,5 +222,6 @@ $loggedIn = Auth::isAdminLoggedIn();
 <script src="<?= auto_ver('teacher.js') ?>"></script>
 <script src="<?= auto_ver('teacher-essay.js') ?>"></script>
 <script src="<?= auto_ver('teacher-score.js') ?>"></script>
+<script src="<?= auto_ver('teacher-classroom.js') ?>"></script>
 </body>
 </html>
