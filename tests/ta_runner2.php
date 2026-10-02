@@ -48,8 +48,8 @@ function db() {
     );
 }
 // 期望失败场景用：捕获异常转结果对象
-function httpErr($path, $post) {
-    try { return http($path, $post); }
+function httpErr($path, $post, $cookie = null) {
+    try { return http($path, $post, $cookie); }
     catch (Throwable $e) { return ['code' => -1, 'msg' => $e->getMessage()]; }
 }
 // 登录：响应成功→提取Cookie→非空→只读身份接口核对
@@ -218,13 +218,15 @@ ok($nGroups === 1, 'S7 分组仅一份');
 
 // ---- S8 重复撤销：首次恢复，二次拒绝且不改分 ----
 $bid = (int)db()->query("SELECT id FROM batch_operations WHERE log_ids = '" . $logId . "'")->fetchColumn();
-$u1 = http('/api/admin/score/batch_undo.php', ['batch_id' => $bid]);
+$scoreBeforeUndo = stuState($SID);
+$u1 = http('/api/admin/score/batch_undo.php', ['batch_id' => $bid], $ckA);
 $scoreAfterUndo = stuState($SID);
-$u2 = http('/api/admin/score/batch_undo.php', ['batch_id' => $bid]);
+$u2 = http('/api/admin/score/batch_undo.php', ['batch_id' => $bid], $ckA);
 $final = stuState($SID);
 ok($u1['code'] === 0, 'S8 首次撤销成功: ' . substr($u1['msg'] ?? '', 0, 60));
 ok($u2['code'] !== 0, 'S8 重复撤销被拒: ' . substr($u2['msg'] ?? '', 0, 60));
-ok((int)$final['score'] === (int)$scoreBeforeUndo['score'] - 1, 'S8 撤销后分数=撤销前-1');
+$expectedAfter = (int)$scoreBeforeUndo['score'] - 1;
+ok((int)$final['score'] === $expectedAfter, "S8 撤销后分数=$expectedAfter（撤销前 {$scoreBeforeUndo['score']}）");
 ok((int)$final['score'] === (int)$scoreAfterUndo['score'], 'S8 二次拒绝后分数不变');
 
 // ================= 全失败明细（不存在学生 → no_effect + failed_detail） =================
