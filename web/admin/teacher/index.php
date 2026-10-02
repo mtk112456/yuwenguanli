@@ -23,7 +23,7 @@ $loggedIn = Auth::isAdminLoggedIn();
     <link rel="stylesheet" href="<?= auto_ver('../../assets/remixicon/remixicon.css') ?>">
     <link rel="stylesheet" href="<?= auto_ver('teacher.css') ?>">
 </head>
-<body class="ta-body <?= $loggedIn ? '' : 'ta-login' ?>" data-view="<?= $loggedIn ? 'app' : 'login' ?>">
+<body class="ta-body <?= $loggedIn ? '' : 'ta-login' ?>" data-view="<?= $loggedIn ? 'app' : 'login' ?>" data-admin-id="<?= (int)($_SESSION['admin_id'] ?? 0) ?>">
 
 <?php if (!$loggedIn): ?>
     <!-- ============ 教师登录视图（仅账号密码） ============ -->
