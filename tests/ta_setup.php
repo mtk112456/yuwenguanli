@@ -3,6 +3,12 @@
  * 隔离库构建：以真实库环境运行（读真实表结构）→ 建隔离库 class_manager_ta_test → 夹具
  * 不调用引擎、不触付费模型、不动真实业务数据（只读真实库的 SHOW CREATE TABLE）
  */
+// 硬校验：本脚本对真实库只读（SHOW CREATE），建表与夹具全部写入隔离库
+if (getenv('DB_NAME') !== 'class_manager') {
+    echo "GUARD FAIL | setup 必须以真实库环境运行（用于读表结构），当前: " . getenv('DB_NAME') . "
+";
+    exit(9);
+}
 $real = new PDO(
     'mysql:host=' . getenv('DB_HOST') . ';dbname=' . getenv('DB_NAME') . ';charset=utf8mb4',
     getenv('DB_USER'), getenv('DB_PASS'),
@@ -18,7 +24,7 @@ $testDb = new PDO(
 );
 
 $tables = ['admin', 'classes', 'students', 'essays', 'essay_submissions', 'essay_images',
-           'grader_jobs', 'grader_job_items', 'records', 'score_log', 'batch_operations'];
+           'grader_jobs', 'grader_job_items', 'app_op_dedup', 'records', 'score_log', 'batch_operations'];
 foreach ($tables as $t) {
     $row = $real->query("SHOW CREATE TABLE `$t`")->fetch(PDO::FETCH_NUM);
     $ddl = preg_replace('/AUTO_INCREMENT=\d+ /', '', $row[1]);
