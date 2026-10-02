@@ -489,6 +489,8 @@ body.ta-task-mode .ta-header,
 body.ta-task-mode .ta-tabbar,
 body.ta-task-mode .ta-ptr { display: none !important; }
 body.ta-task-mode .ta-main { padding-bottom: 0; }
+/* 课堂速记最近记录避开固定操作栏。 */
+#taCmRecent { margin-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
 
 .ta-task-head {
     display: flex; align-items: center; gap: 8px;
