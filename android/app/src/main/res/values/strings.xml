@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">班级成长助教·教师端</string>
-    <string name="title_activity_main">班级成长助教·教师端</string>
+    <string name="app_name">语文素养积分教师端·教师端</string>
+    <string name="title_activity_main">语文素养积分教师端·教师端</string>
     <string name="package_name">tech.qneng.teacher</string>
     <string name="custom_url_scheme">tech.qneng.teacher</string>
 </resources>

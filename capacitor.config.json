@@ -1,6 +1,6 @@
 {
   "appId": "tech.qneng.teacher",
-  "appName": "班级成长助教",
+  "appName": "语文素养积分教师端",
   "webDir": "www",
   "server": {
     "url": "https://qi.qnengs.tech/admin/teacher/index.php",

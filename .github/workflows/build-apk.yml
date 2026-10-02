@@ -56,5 +56,5 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: 班级成长助教-教师端-Release
+          name: 语文素养积分教师端-Release
           path: android/app/build/outputs/apk/release/*.apk

@@ -1,5 +1,5 @@
 /**
- * 班级成长助教 · 教师端 App 壳层逻辑
+ * 语文素养积分教师端 · 教师端 App 壳层逻辑
  * - 固定四 Tab（工作台/作文批改/量化考核/全部）+ 独立二级功能容器，底栏全局唯一
  * - 工作台数据全部来自真实接口 api/admin/dashboard.php，无任何写死数字
  * - 五主题复用 ThemeManager，切换用圆形揭示（View Transitions），reduced-motion 自动降级
@@ -976,7 +976,7 @@
 
             '<div class="ta-set-group"><div class="ta-set-cap">关于</div>' +
             '<div class="ta-card ta-set-row"><span class="ta-set-ic"><i class="ri-apps-2-line"></i></span>' +
-            '<span class="ta-set-main"><b>班级成长助教 · 教师端</b><span class="ta-set-sub">版本 v' + escapeHtml(ver) + '</span></span>' +
+            '<span class="ta-set-main"><b>语文素养积分教师端 · 教师端</b><span class="ta-set-sub">版本 v' + escapeHtml(ver) + '</span></span>' +
             '<button type="button" class="ta-btn-mini" id="taSetUpdate">检查更新</button></div></div>' +
 
             '<div style="height:24px;"></div>';

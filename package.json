@@ -1,7 +1,7 @@
 {
   "name": "teacher-manager-app",
   "version": "1.0.0",
-  "description": "班级成长助教·教师端（独立教师管理 App）",
+  "description": "语文素养积分教师端·教师端（独立教师管理 App）",
   "scripts": {
     "cap:sync": "cap sync",
     "cap:add:android": "cap add android"

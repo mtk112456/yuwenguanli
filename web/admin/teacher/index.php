@@ -1,6 +1,6 @@
 <?php
 /**
- * admin/teacher/index.php — 班级成长助教 · 教师端 App 专用入口
+ * admin/teacher/index.php — 语文素养积分教师端 · 教师端 App 专用入口
  * 未登录：教师专属登录页（纯账号密码，不含任何白板组件）
  * 已登录：App 壳层（固定四 Tab：工作台 / 作文批改 / 量化考核 / 全部）
  * 仅新增文件，不修改任何现有后台页面；桌面后台与学生端不受影响。
@@ -18,7 +18,7 @@ $loggedIn = Auth::isAdminLoggedIn();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <link rel="icon" href="data:,">
-    <title>班级成长助教 · 教师端</title>
+    <title>语文素养积分教师端 · 教师端</title>
     <script src="<?= auto_ver('../../assets/js/theme_loader.js') ?>"></script>
     <link rel="stylesheet" href="<?= auto_ver('../../assets/remixicon/remixicon.css') ?>">
     <link rel="stylesheet" href="<?= auto_ver('teacher.css') ?>">
@@ -29,7 +29,7 @@ $loggedIn = Auth::isAdminLoggedIn();
     <!-- ============ 教师登录视图（仅账号密码） ============ -->
     <div class="ta-login-card">
         <div class="ta-login-seal">师</div>
-        <div class="ta-login-title">班级成长助教</div>
+        <div class="ta-login-title">语文素养积分教师端</div>
         <div class="ta-login-sub">教 师 端</div>
         <div class="ta-login-err" id="taLoginErr" role="alert" hidden></div>
         <div class="ta-field">

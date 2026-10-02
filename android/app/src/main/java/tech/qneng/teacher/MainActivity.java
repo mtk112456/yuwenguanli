@@ -633,7 +633,7 @@ public class MainActivity extends BridgeActivity {
         }
 
         lastBackPressTime = currentTime;
-        exitToast = Toast.makeText(this, "再按一次退出 班级成长助教·教师端", Toast.LENGTH_SHORT);
+        exitToast = Toast.makeText(this, "再按一次退出 语文素养积分教师端·教师端", Toast.LENGTH_SHORT);
         exitToast.show();
     }
 }
