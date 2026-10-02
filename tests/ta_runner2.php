@@ -113,7 +113,15 @@ try {
 }
 if (($env['test_mode'] ?? false) !== true) { echo "GUARD FAIL | test_mode != true\n"; exit(9); }
 if (($env['database'] ?? '') !== 'class_manager_ta_test') { echo "GUARD FAIL | 测试服务实际库: " . ($env['database'] ?? '') . "\n"; exit(9); }
-    echo "GUARD FAIL | run_id mismatch (expect " . $RUN_ID . " got " . ($env["run_id"] ?? "") . ")\n";
+echo "run_id hex (runner): len=" . strlen($RUN_ID) . " hex=" . bin2hex($RUN_ID) . "
+";
+echo "run_id hex (endpoint): len=" . strlen(($env["run_id"] ?? "")) . " hex=" . bin2hex($env["run_id"] ?? "") . "
+";
+if (trim($env["run_id"] ?? "") !== $RUN_ID) {
+    echo "GUARD FAIL | run_id mismatch (expect " . $RUN_ID . " got " . ($env["run_id"] ?? "") . ")
+";
+    exit(9);
+}
 echo "GUARD OK | 测试服务环境 (run_id=$RUN_ID)\n";
 
 // ================= 前置3：双管理员登录 + 身份核对 =================
