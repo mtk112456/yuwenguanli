@@ -1,0 +1,8 @@
+P1 PASS: 网络失败保留操作，只读查询不重发
+P2 PASS: 刷新保留原键原参数
+P3 PASS: 查询完成共用收尾，不重复记分
+P4 PASS: 待归组刷新恢复，仅重试归组
+identity toast: 身份信息缺失，请重新登录 errors: []
+PASS: 缺失身份禁止提交
+PASS: 三宽度五主题模块布局与正常点击检查
+JS errors: 0

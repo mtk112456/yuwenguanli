@@ -1,0 +1,56 @@
+SETUP OK tables=12
+GUARD OK | 数据库 = class_manager_ta_test
+run_id hex (runner): len=17 hex=6163632d76372d31373930393236313730
+run_id hex (endpoint): len=17 hex=6163632d76372d31373930393236313730
+GUARD OK | 测试服务环境 (run_id=acc-v7-1790926170)
+IDENTITY OK | ta_test (id=1)
+IDENTITY OK | ta_test2 (id=3)
+FIXTURE | 学生 9002 初始分 100 v1
+PASS | S1 首次执行成功
+PASS | S1 第二次返回重放结果
+PASS | S1 两次返回同一日志ID
+PASS | S1 分数只变一次、日志一份
+IDENTITY OK | ta_test (id=1)
+PASS | S2 子进程正常退出
+PASS | S2 子进程正常退出
+PASS | S2 并发两请求均正常返回（无错误响应）
+PASS | S2 两请求返回同一日志（重放一致）
+PASS | S2 分数只变一次、日志一份
+PASS | S3 同键不同参数被拒: 同一操作键携带了不同参数，�
+PASS | S3 未产生新日志
+PASS | S4 A首次执行成功
+PASS | S4 他人操作被隔离拒绝: 无权访问他人的操作结果
+PASS | S4 A重发返回原结果
+PASS | S5 未提交前查询=not_found（不代表失败）
+PASS | S5 完成后查询返回首次结果
+PASS | S5 查询前后：分数与日志只因该次操作变化一次
+PASS | S5 他人查询按 not_found 隔离
+PASS | S7 首次归组成功
+PASS | S7 重试返回原分组（existed）
+PASS | S7 分组仅一份
+PASS | S8 首次撤销成功: 撤销成功，共回滚 1 条记录
+PASS | S8 重复撤销被拒: 批量记录不存在
+PASS | S8 score=107 (before 108)
+PASS | S8 二次拒绝后分数不变
+PASS | S9 撤销后原键返回历史结果
+PASS | S9 撤销后重发不重新加分或创建日志
+PASS | 全失败返回 no_effect + failed_detail 明细
+================
+RESULT: ALL PASS
+---- 最终数据库状态 ----
+[students]
+{"id":9001,"0":9001,"name":"T并发甲","1":"T并发甲","score":100,"2":100,"version":1,"3":1}
+{"id":9002,"0":9002,"name":"T撤甲","1":"T撤甲","score":107,"2":107,"version":7,"3":7}
+[score_log(测试事由)]
+{"id":1,"0":1,"student_id":9002,"1":9002,"change_value":2,"2":2,"reason":"v3-seq","3":"v3-seq"}
+{"id":2,"0":2,"student_id":9002,"1":9002,"change_value":3,"2":3,"reason":"v3-par","3":"v3-par"}
+{"id":3,"0":3,"student_id":9002,"1":9002,"change_value":1,"2":1,"reason":"v3-diff-a","3":"v3-diff-a"}
+{"id":4,"0":4,"student_id":9002,"1":9002,"change_value":1,"2":1,"reason":"v3-iso","3":"v3-iso"}
+[app_op_dedup]
+{"op_key":"acc-v7-1790926170-diff","0":"acc-v7-1790926170-diff","operator_id":1,"1":1,"status":"completed","2":"completed"}
+{"op_key":"acc-v7-1790926170-iso","0":"acc-v7-1790926170-iso","operator_id":1,"1":1,"status":"completed","2":"completed"}
+{"op_key":"acc-v7-1790926170-noeff","0":"acc-v7-1790926170-noeff","operator_id":1,"1":1,"status":"completed","2":"completed"}
+{"op_key":"acc-v7-1790926170-par","0":"acc-v7-1790926170-par","operator_id":1,"1":1,"status":"completed","2":"completed"}
+{"op_key":"acc-v7-1790926170-res","0":"acc-v7-1790926170-res","operator_id":1,"1":1,"status":"completed","2":"completed"}
+{"op_key":"acc-v7-1790926170-seq","0":"acc-v7-1790926170-seq","operator_id":1,"1":1,"status":"completed","2":"completed"}
+[batch_operations(测试)]
